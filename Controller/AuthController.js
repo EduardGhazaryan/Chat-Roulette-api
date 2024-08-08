@@ -12,7 +12,7 @@ const AuthController = {
                 res.status(data.status).send({ message: data.message });
             } else {
                 if(data.success){
-                    res.status(data.status).send({ message: data.message , success:data.success, user: data.user , token : data.access_token});
+                    res.status(data.status).send({ message: data.message , success:data.success, user: data.user , });
                 }else{
                     res.status(data.status).send({ message: data.message , success:data.success});
                 }
@@ -32,7 +32,7 @@ const AuthController = {
                 res.status(data.status).send({ message: data.message });
             }else{
                if(data.success){
-                res.status(data.status).send({ message: data.message, access_token: data.access_token, user: data.user, success:data.success });
+                res.status(data.status).send({ message: data.message, user: data.user, success:data.success });
                }else{
                 res.status(data.status).send({ message: data.message, success:data.success});
                }

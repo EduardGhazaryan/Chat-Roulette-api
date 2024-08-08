@@ -43,13 +43,13 @@ const AuthService = {
             if(findUser){
                 if(findUser.phoneID === phoneID){
                    
-                        const access_token = generateAccessToken(findUser)
+                  
                         findUser.status = "online"
                         findUser.socketID = socketID
-                        findUser.access_token = access_token
+                       
                         await findUser.save()
     
-                        return { status: 201, message: "You have successfully logged in", access_token, user: findUser, success:true };
+                        return { status: 201, message: "You have successfully logged in", user: findUser, success:true };
                     
     
                
