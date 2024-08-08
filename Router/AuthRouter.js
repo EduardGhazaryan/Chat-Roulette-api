@@ -7,6 +7,8 @@ AuthRouter.post("/signUp", AuthController.signUp);
 
 AuthRouter.post("/signIn", AuthController.signIn)
 
+AuthRouter.post("/signInToken", AuthController.signInToken)
+
 AuthRouter.post('/signOut', AuthController.singOut)
 
 module.exports = AuthRouter;

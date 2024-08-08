@@ -6,22 +6,31 @@ const AuthService = {
         if (gender && age && nickname) {
             const findUser = await User.findOne({ nickname });
             if (findUser) {
-                return { status: 409, message: "Nickname already exists" };
+                return { status: 201, message: "Nickname already exists" , success: false};
             } else {
-          
-                const newUser = new User({
+
+                const userObj = {
                     age,
                     gender,
                     nickname,
                     socketID,
                     phoneID
+                }
+          
+                const access_token = generateAccessToken(userObj);
+                const newUser = new User({
+                    age,
+                    gender,
+                    nickname,
+                    socketID,
+                    phoneID,
+                    access_token
                 });
 
-                const access_token = generateAccessToken(newUser);
 
                 await newUser.save();
 
-                return { status: 201, message: "You have successfully registered", access_token };
+                return { status: 201, message: "You have successfully registered", success: true, access_token, user: newUser };
             }
         } else {
             return { status: 400, message: "Bad Request" };
@@ -33,26 +42,38 @@ const AuthService = {
 
             if(findUser){
                 if(findUser.phoneID === phoneID){
-                    if(findUser.status === "online"){
-                        return {status:409,message: 'User already logged in from another device'}
-                    }else{
+                   
+                        const access_token = generateAccessToken(findUser)
                         findUser.status = "online"
                         findUser.socketID = socketID
+                        findUser.access_token = access_token
                         await findUser.save()
-                        const access_token = generateAccessToken(findUser)
     
-                        return { status: 201, message: "You have successfully logged in", access_token };
-                    }
+                        return { status: 201, message: "You have successfully logged in", access_token, user: findUser, success:true };
+                    
     
                
                 }else{
-                    return  {status: 401, message: 'Invalid phone ID' }
+                    return  {status: 201, message: 'Invalid phone ID' , success :false}
                 }
             }else{
-                return {status:404, message :"User not found"}
+                return {status:201, message :"User not found", success: false}
             }
         }else{
             return {status:400, message :"Bad Request"}
+        }
+    },
+    signInToken : async (token)=>{
+        if(token){
+            const findUser = await User.findOne({access_token :token})
+
+            if(findUser){
+                return {status: 201, message: "You have successfully logged in", user: findUser, success:true }
+            }else{
+                return {message: "Invalid Token", success:false, status: 201}
+            }
+        }else{
+            return {status: 400, message :"Bad Request"}
         }
     },
     signOut: async(userId)=>{

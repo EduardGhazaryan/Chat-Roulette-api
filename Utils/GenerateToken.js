@@ -6,7 +6,7 @@ const generateAccessToken = (user) => {
     };
 
     const access_token = jwt.sign(payload, process.env.ACCESS_TOKEN, {
-        expiresIn: "1d"
+        expiresIn: "6m"
     });
 
     return access_token;

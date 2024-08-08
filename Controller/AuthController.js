@@ -11,7 +11,11 @@ const AuthController = {
             if (data.status !== 201) {
                 res.status(data.status).send({ message: data.message });
             } else {
-                res.status(data.status).send({ message: data.message, access_token: data.access_token });
+                if(data.success){
+                    res.status(data.status).send({ message: data.message , success:data.success, user: data.user , token : data.access_token});
+                }else{
+                    res.status(data.status).send({ message: data.message , success:data.success});
+                }
             }
         } catch (error) {
             console.error(error);
@@ -27,8 +31,34 @@ const AuthController = {
             if(data.status !== 201){
                 res.status(data.status).send({ message: data.message });
             }else{
-                res.status(data.status).send({ message: data.message, access_token: data.access_token });
+               if(data.success){
+                res.status(data.status).send({ message: data.message, access_token: data.access_token, user: data.user, success:data.success });
+               }else{
+                res.status(data.status).send({ message: data.message, success:data.success});
+               }
             }
+            
+        } catch (error) {
+            console.error(error);
+            res.status(500).send({ message: "Internal Server Error" });
+        }
+    },
+    signInToken :async (req,res)=>{
+        try {
+            const {token} = req.body
+
+            const data = await AuthService.signInToken(token)
+
+            if(data.status === 201){
+                if(data.success){
+                    res.status(data.status).send({message: data.message, user : data.user, success :data.success})
+                }else{
+                    res.status(data.status).send({message : data.message, success: data.success})
+                }
+            }else{
+                res.status(data.status).send({message:data.message})
+            }
+            
             
         } catch (error) {
             console.error(error);
