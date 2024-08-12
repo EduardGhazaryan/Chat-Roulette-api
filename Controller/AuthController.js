@@ -4,9 +4,11 @@ const AuthController = {
     signUp: async (req, res) => {
         try {
             const { age, gender, nickname, socketID, phoneID } = req.body;
+            const language = req.headers["accept-language"]
+       
 
 
-            const data = await AuthService.signUp(gender, age, nickname,socketID,phoneID);
+            const data = await AuthService.signUp(gender, age, nickname,socketID,phoneID,language);
 
             if (data.status !== 201) {
                 res.status(data.status).send({ message: data.message });
@@ -26,7 +28,9 @@ const AuthController = {
         try {
             const {nickname, socketID,phoneID} = req.body
 
-            const data = await AuthService.signIn(nickname,socketID,phoneID)
+            const language = req.headers["accept-language"]
+
+            const data = await AuthService.signIn(nickname,socketID,phoneID,language)
 
             if(data.status !== 201){
                 res.status(data.status).send({ message: data.message });
@@ -47,9 +51,11 @@ const AuthController = {
         try {
             const {token} = req.body
 
-            const data = await AuthService.signInToken(token)
+            const language = req.headers["accept-language"]
 
-            if(data.status === 201){
+            const data = await AuthService.signInToken(token,language)
+
+            if(data.status === 201 || data.status === 200){
                 if(data.success){
                     res.status(data.status).send({message: data.message, user : data.user, success :data.success})
                 }else{
@@ -69,10 +75,12 @@ const AuthController = {
         try {
             const {userId} = req.body
 
-            const data = await AuthService.signOut(userId)
+            const language = req.headers["accept-language"]
+
+            const data = await AuthService.signOut(userId,language)
 
         
-            res.status(data.status).send({ message: data.message });
+            res.status(data.status).send({ message: data.message , success: data.success});
         
         } catch (error) {
             console.error(error);
