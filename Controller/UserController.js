@@ -23,7 +23,7 @@ const UserController = {
             if(data.status === 200){
           
                 let interval = setInterval(async () => {
-                    if(count === 5){
+                    if(count === 60){
                         res.status(200).send(data)
                         clearInterval(interval)
                     }else{
