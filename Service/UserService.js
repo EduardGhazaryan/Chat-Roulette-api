@@ -564,17 +564,17 @@ const UserService = {
             if(language){
                 if(language ==="am"){
                     
-                    return {status: 200, message: "Տվյալ պահին օնլայն օգտատերեր չկան:"}
+                    return {status: 200, message: "Տվյալ պահին օնլայն օգտատերեր չկան:", success: false}
                 }
                 if(language ==="ru"){
-                    return {status: 200, message: "В настоящее время нет онлайн-пользователей."}
+                    return {status: 200, message: "В настоящее время нет онлайн-пользователей.", success: false}
                 }
                 if(language ==="en"){
-                    return {status: 200, message: "There are currently no online users"}
+                    return {status: 200, message: "There are currently no online users", success: false}
                 }
 
             }else{
-                return {status: 200, message: "There are currently no online users"}
+                return {status: 200, message: "There are currently no online users", success: false}
             }
          
         }

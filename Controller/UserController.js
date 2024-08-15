@@ -24,7 +24,7 @@ const UserController = {
           
                 let interval = setInterval(async () => {
                     if(count === 10){
-                        res.status(200).send(data)
+                        res.status(200).send({message: data.message, success: data.success})
                         clearInterval(interval)
                     }else{
                         
