@@ -15,7 +15,7 @@ const Connection = require("./Utils/Connection.js")
 
 const AuthRouter = require("./Router/AuthRouter.js")
 const UserRouter = require("./Router/UserRouter.js")
-const { log } = require("console")
+
 
 
 const app = express()
@@ -236,6 +236,6 @@ io.on("connection", (socket) => {
 })
 
 const PORT = process.env.PORT || 2000
-console.log(1);
+
 
 server.listen(PORT, () => console.log(`server is running on ${PORT}`))

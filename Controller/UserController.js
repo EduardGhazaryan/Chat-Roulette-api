@@ -8,16 +8,36 @@ const UserController = {
             const {id} = req.params
             const language = req.headers["accept-language"]
    
+            const myMinAge = minAge ? minAge : null
+            const myMaxAge = maxAge ? maxAge : null
+            const myGender = gender ? gender : null
+            
+       
         
-            const data = await UserService.search(gender, parseInt(maxAge), parseInt(minAge),id,language);
+            
+            let data = await UserService.search(myGender,myMaxAge,myMinAge,id,language);
+            let count = 0
+           
+            
             
             if(data.status === 200){
           
-                if(data.success){
-                    res.status(data.status).send({ user: data.user , success:data.success});
-                }else{
-                    res.status(data.status).send({ message: data.message , success:data.success});
-                }
+                let interval = setInterval(async () => {
+                    if(count === 5){
+                        res.status(200).send(data)
+                        clearInterval(interval)
+                    }else{
+                        
+                        if(data.success){
+                            res.status(data.status).send({user:data.user, success:data.success})
+                            clearInterval(interval)
+                        }else{
+                            let data2 = await UserService.search(myGender,myMaxAge,myMinAge,id,language);
+                            data = data2
+                            count++
+                        }
+                    }
+                }, 1000);
                 
             }else{
                 res.status(data.status).send({ message: data.message });
@@ -134,8 +154,9 @@ const UserController = {
             const {bonus} = req.body
 
             const {id} = req.params
+            const language = req.headers["accept-language"]
 
-            const data = await UserService.changeBonus(id,bonus)
+            const data = await UserService.changeBonus(id,bonus,language)
 
             
             if(data.status === 202 || data.status === 200){
@@ -150,6 +171,25 @@ const UserController = {
         } catch (error) {
             console.error(error);
             res.status(500).send({ message: "Internal Server Error" });
+        }
+    },
+    stopSearch : async(req,res)=>{
+        try {
+            const {userId} = req.body
+            const language = req.headers["accept-language"]
+
+            const data = await UserService.stopSearch(userId,language)
+
+            if(data.status < 400){
+                res.status(data.status).send({message:data.message,success:data.success})
+            }else{
+                res.status(data.status).send({message:data.message})
+            }
+
+            
+        } catch (error) {
+            console.error(error)
+            res.status(500).send({message:"Internal Server Error"})
         }
     }
 };

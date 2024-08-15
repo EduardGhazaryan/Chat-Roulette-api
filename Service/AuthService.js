@@ -137,11 +137,15 @@ const AuthService = {
             return {status:400, message :"Bad Request"}
         }
     },
-    signInToken : async (token,language)=>{
+    signInToken : async (token,socketID,language)=>{
         if(token){
             const findUser = await User.findOne({access_token :token})
 
             if(findUser){
+                findUser.status = "online"
+                findUser.socketID = socketID
+                await findUser.save()
+
                 if(language){
                     if(language === "am"){
                         return {status: 201, message: "Դուք հաջողությամբ մուտք եք գործել", user: findUser, success:true }
