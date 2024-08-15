@@ -39,18 +39,34 @@ app.use("/api/user", UserRouter)
 app.post("/api/mail", async (req,res)=>{
 	try {
 		const {from,text} = req.body
+		const language = req.headers["accept-language"]
 
-		const mailOptions = {
-			from : process.env.EMAIL,
-			to : "edoghazaryan7@gmail.com",
-			subject : from,
-			text : text
+		if(from && text){
+			const mailOptions = {
+				from : process.env.EMAIL,
+				to : "edoghazaryan7@gmail.com",
+				subject : from,
+				text : text
+			}
+			console.log(mailOptions);
+	
+			await transporter.sendMail(mailOptions)
+	
+			if(language){
+				if(language === "am"){
+					res.status(201).send({message:"Ձեր նամակը հաջողությամ ուղարկվել է ձեզ հետ կապ կհաստատեն նշված էլէկտրոնային հասցեով", 								success:true})
+				
+				}
+				if(language === "ru"){
+					res.status(201).send({message:"Ваше электронное письмо было успешно отправлено, и с вами свяжутся по указанному адресу электронной 	`					почты.", success:true})
+				}
+				if(language === "en"){
+					res.status(201).send({message:"Your email has been successfully sent, and you will be contacted at the email address you 								provided.", 	success:true})
+				}
+			}else{
+				res.status(201).send({message:"Your email has been successfully sent, and you will be contacted at the email address you 								provided.", 	success:true})
+			}
 		}
-		console.log(mailOptions);
-
-		await transporter.sendMail(mailOptions)
-
-		res.status(201).send({message:from})
 
 	} catch (error) {
 		console.error(error)
