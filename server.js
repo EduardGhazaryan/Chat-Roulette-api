@@ -125,12 +125,18 @@ function getRandomRoomName(length = 10) {
     return roomName;
   }
 
+  function generateUniqueId() {
+    const timestamp = Date.now(); // Current timestamp
+    const randomNum = Math.floor(Math.random() * 1000000); // Random number between 0 and 999999
+    return `id-${timestamp}-${randomNum}`;
+}
+
 
 
 
 const io = require("socket.io")(server, {
 	cors: {
-		origin: "http://localhost:3000",
+		origin: "http://localhost:8081",
 		methods: [ "GET", "POST" ]
 	}
 })
@@ -210,7 +216,8 @@ io.on("connection", (socket) => {
 
 		socket.on('message', (message) => {
 			console.log("message---",message);
-			io.to(roomId).emit('createMessage', {message, from:message.from,userId:message.userId});
+			let id = generateUniqueId()
+			io.to(roomId).emit('createMessage', {...message, messageID: id });
 		});
 		
 		socket.on('image_upload', (data) => {
