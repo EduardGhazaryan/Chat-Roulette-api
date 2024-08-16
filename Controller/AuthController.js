@@ -4,13 +4,12 @@ const AuthController = {
     signUp: async (req, res) => {
         try {
             const { age, gender, nickname, socketID, phoneID } = req.body;
-            const language = req.headers["accept-language"]
+            const language =  req.headers["accept-language"] === "am" || req.headers["accept-language"] === "ru" || req.headers["accept-language"] === "en"  ? req.headers["accept-language"] : null
        
             
             const data = await AuthService.signUp(gender, age, nickname,socketID,phoneID,language);
-            
-           
-            if (data.status !== 201) {
+            console.log("controll---",data);
+            if (data.status > 300) {
                 res.status(data.status).send({ message: data.message });
             } else {
                 if(data.success){

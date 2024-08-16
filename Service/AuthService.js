@@ -3,11 +3,15 @@ const { generateAccessToken } = require('../Utils/GenerateToken.js');
 
 const AuthService = {
     signUp: async (gender, age, nickname,socketID,phoneID,language) => {
+       
         if (gender && age && nickname) {
             const findUser = await User.findOne({ nickname });
+        
+            
             if (findUser) {
                 if(language){
                     if(language === "am"){
+                        console.log("service---",language);
                         return { status: 200, message: "Տվյալ nickname-ով օգտատեր արդեն գոյություն ունի" , success: false};
                     }
                     if(language === "ru"){
@@ -22,7 +26,6 @@ const AuthService = {
                     
                 }
             } else {
-
                 const userObj = {
                     age,
                     gender,

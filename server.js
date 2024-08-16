@@ -114,19 +114,30 @@ const storage = multer.diskStorage({
 
 
 
+function getRandomRoomName(length = 10) {
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+    let roomName = '';
+    
+    for (let i = 0; i < length; i++) {
+        roomName += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    
+    return roomName;
+  }
 
 
 
 
 const io = require("socket.io")(server, {
 	cors: {
-		origin: "http://localhost:8081",
+		origin: "http://localhost:3000",
 		methods: [ "GET", "POST" ]
 	}
 })
 
 const users = {}
 let all_connected_users = []
+let newRoomConnect = []
 
 io.on("connection", (socket) => {
 	if (!users[socket.id]) {
@@ -148,12 +159,54 @@ io.on("connection", (socket) => {
 	  })
 
 
-	socket.on("join", (payload) => {
-		const roomId = payload.roomId
-		const roomClients = io.sockets.adapter.rooms.get(roomId) || { size: 0 }
-		const numberOfClients = roomClients.size
+	socket.on("join", (payload,) => {
+		let roomId = getRandomRoomName()
+		let roomClients 
+		let numberOfClients 
 		userName_cookie = payload.socketID
-		console.log("join-----",payload.roomId);
+		console.log("join-----",payload);
+		const findChat = newRoomConnect.find((chat)=> chat.roomMembers.includes(payload.socketID) && chat.roomMembers.includes(payload.participant))
+
+		if(findChat){
+			roomId = findChat.roomId
+			socket.join(findChat.roomId)
+			all_connected_users.map((r) => {
+			if (r.room_id === findChat.roomId) {
+				r.room_members.push(socket.id)
+			}
+		})
+			socket.emit('room_joined', {
+				roomId: findChat.roomId,
+				peerId: socket.id,
+				all_users: all_connected_users
+			})
+			console.log("join------", all_connected_users);
+		
+		
+
+		}else{
+			newRoomConnect.push({
+				roomId,
+				roomMembers : [payload.socketID, payload.participant]
+			})
+
+
+				 roomClients = io.sockets.adapter.rooms.get(roomId) || { size: 0 }
+				 numberOfClients = roomClients.size
+
+			socket.join(roomId)
+			console.log(`Creating room ${roomId} and emitting room_created socket event`)
+			all_connected_users.push({
+				room_id: roomId,
+				room_members: [userName_cookie]
+			})
+			socket.emit('room_created', {
+				roomId: roomId,
+				peerId: socket.id,
+				all_users: all_connected_users
+			})
+		}
+		
 
 		socket.on('message', (message) => {
 			console.log("message---",message);
@@ -180,33 +233,33 @@ io.on("connection", (socket) => {
 			socket.to(roomId).emit("end_chat",{})
 		})
 
-		if (numberOfClients === 0) {
-			socket.join(roomId)
-			console.log(`Creating room ${roomId} and emitting room_created socket event`)
-			all_connected_users.push({
-				room_id: roomId,
-				room_members: [userName_cookie]
-			})
-			socket.emit('room_created', {
-				roomId: roomId,
-				peerId: socket.id,
-				all_users: all_connected_users
-			})
-		} else {
-			console.log(`Joining room ${roomId} and emitting room_joined socket event`)
-			all_connected_users.map((r) => {
-				if (r.room_id === roomId) {
-					r.room_members.push(socket.id)
-				}
-			})
-			socket.join(roomId)
-			socket.emit('room_joined', {
-				roomId: roomId,
-				peerId: socket.id,
-				all_users: all_connected_users
-			})
-			console.log("join------", all_connected_users);
-		}
+		// if (numberOfClients === 0) {
+		// 	socket.join(roomId)
+		// 	console.log(`Creating room ${roomId} and emitting room_created socket event`)
+		// 	all_connected_users.push({
+		// 		room_id: roomId,
+		// 		room_members: [userName_cookie]
+		// 	})
+		// 	socket.emit('room_created', {
+		// 		roomId: roomId,
+		// 		peerId: socket.id,
+		// 		all_users: all_connected_users
+		// 	})
+		// } else {
+		// 	console.log(`Joining room ${roomId} and emitting room_joined socket event`)
+		// 	all_connected_users.map((r) => {
+		// 		if (r.room_id === roomId) {
+		// 			r.room_members.push(socket.id)
+		// 		}
+		// 	})
+		// 	socket.join(roomId)
+		// 	socket.emit('room_joined', {
+		// 		roomId: roomId,
+		// 		peerId: socket.id,
+		// 		all_users: all_connected_users
+		// 	})
+		// 	console.log("join------", all_connected_users);
+		// }
 
 
 		// -----------voice socket start
