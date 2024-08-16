@@ -179,6 +179,7 @@ const UserController = {
             const language = req.headers["accept-language"]
 
             const data = await UserService.stopSearch(userId,language)
+            console.log("stop----", req.body);
 
             if(data.status < 400){
                 res.status(data.status).send({message:data.message,success:data.success})
