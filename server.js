@@ -98,6 +98,7 @@ const storage = multer.diskStorage({
   // Route to handle audio uploads
   app.post('/upload-audio', upload.single('audio'), (req, res) => {
 	if (req.file) {
+		console.log("file---",req);
 	  res.json({ filePath: `uploads/${req.file.filename}` });
 	} else {
 	  res.status(400).json({ error: 'File upload failed' });
@@ -136,7 +137,7 @@ function getRandomRoomName(length = 10) {
 
 const io = require("socket.io")(server, {
 	cors: {
-		origin: "http://localhost:8081",
+		origin: "http://localhost:3000",
 		methods: [ "GET", "POST" ]
 	}
 })

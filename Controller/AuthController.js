@@ -48,9 +48,15 @@ const AuthController = {
     },
     signInToken :async (req,res)=>{
         try {
-            const {token,socketID} = req.body
+            const {socketID} = req.body
+            const access_token = req?.headers?.authorization
+            const token = access_token.split(" ")[1]
 
             const language = req.headers["accept-language"]
+
+            console.log("token------",access_token);
+            console.log("socketID------", socketID);
+            console.log("language------",language);
 
             const data = await AuthService.signInToken(token,socketID,language)
 
