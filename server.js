@@ -6,6 +6,7 @@ const path = require("path")
 const fs = require("fs")
 const nodemailer = require("nodemailer")
 const uuid = require("uuid")
+const { v4: uuidv4 } = require('uuid');
 const multer = require("multer")
 
 
@@ -96,14 +97,14 @@ const storage = multer.diskStorage({
   }
   
   // Route to handle audio uploads
-  app.post('/upload-audio', upload.single('audio'), (req, res) => {
-	if (req.file) {
-		console.log("file---",req);
-	  res.json({ filePath: `uploads/${req.file.filename}` });
-	} else {
-	  res.status(400).json({ error: 'File upload failed' });
-	}
-  });
+//   app.post('/upload-audio', upload.single('audio'), (req, res) => {
+// 	if (req.file) {
+// 		console.log("file---",req);
+// 	  res.json({ filePath: `uploads/${req.file.filename}` });
+// 	} else {
+// 	  res.status(400).json({ error: 'File upload failed' });
+// 	}
+//   });
 
 
 
@@ -127,8 +128,8 @@ function getRandomRoomName(length = 10) {
   }
 
   function generateUniqueId() {
-    const timestamp = Date.now(); // Current timestamp
-    const randomNum = Math.floor(Math.random() * 1000000); // Random number between 0 and 999999
+    const timestamp = Date.now(); 
+    const randomNum = Math.floor(Math.random() * 1000000); 
     return `id-${timestamp}-${randomNum}`;
 }
 
@@ -137,7 +138,7 @@ function getRandomRoomName(length = 10) {
 
 const io = require("socket.io")(server, {
 	cors: {
-		origin: "http://localhost:3000",
+		origin: "http://localhost:8081",
 		methods: [ "GET", "POST" ]
 	}
 })
@@ -161,7 +162,7 @@ io.on("connection", (socket) => {
 	socket.on('disconnect', () => {	  
 		delete users[socket.id];
 		
-		console.log(socket.id);
+		console.log("disconnect-------",socket.id);
 		io.sockets.emit("available_users", users);
 	  })
 
@@ -216,14 +217,14 @@ io.on("connection", (socket) => {
 		
 
 		socket.on('message', (message) => {
-			console.log("message---",message);
+
 			let id = generateUniqueId()
 			io.to(roomId).emit('createMessage', {...message, messageID: id });
 		});
 		
 		socket.on('image_upload', (data) => {
 			const buffer = Buffer.from(data.image, 'base64');
-			console.log("bufer---",buffer);
+
 			const fileName = `${Date.now()}.jpg`;
 			const filePath = path.join(__dirname, 'uploads', fileName);
 			fs.writeFile(filePath, buffer, (err) => {
@@ -237,60 +238,66 @@ io.on("connection", (socket) => {
 			io.to(roomId).emit('receive_image', { imageUrl,userId:data.userId});
 		  });
 		socket.on('end_chat',(info)=>{
+			findRoom = newRoomConnect.find((r)=> r.roomId === info.roomId)
+
+			if(info.chat){
+				info.chat.map(el=>{
+					if(img){
+						fs.unlink(`${img}`, (err) => {
+							if (err) {
+								console.error('Error deleting the file:', err);
+								return;
+							}
+							console.log('File deleted successfully');
+						});
+					}
+					if(voice){
+						fs.unlink(`${voice}`, (err) => {
+							if (err) {
+								console.error('Error deleting the file:', err);
+								return;
+							}
+							console.log('File deleted successfully');
+						});
+					}
+				})
+			}
+
 			all_connected_users = all_connected_users.filter((r)=> r.room_id !== info.roomId)
+			newRoomConnect = newRoomConnect.filter((r)=>r.roomId !== info.roomId)
+
+
 			socket.to(roomId).emit("end_chat",{})
+			
 		})
 
-		// if (numberOfClients === 0) {
-		// 	socket.join(roomId)
-		// 	console.log(`Creating room ${roomId} and emitting room_created socket event`)
-		// 	all_connected_users.push({
-		// 		room_id: roomId,
-		// 		room_members: [userName_cookie]
-		// 	})
-		// 	socket.emit('room_created', {
-		// 		roomId: roomId,
-		// 		peerId: socket.id,
-		// 		all_users: all_connected_users
-		// 	})
-		// } else {
-		// 	console.log(`Joining room ${roomId} and emitting room_joined socket event`)
-		// 	all_connected_users.map((r) => {
-		// 		if (r.room_id === roomId) {
-		// 			r.room_members.push(socket.id)
-		// 		}
-		// 	})
-		// 	socket.join(roomId)
-		// 	socket.emit('room_joined', {
-		// 		roomId: roomId,
-		// 		peerId: socket.id,
-		// 		all_users: all_connected_users
-		// 	})
-		// 	console.log("join------", all_connected_users);
-		// }
+	
 
 
-		// -----------voice socket start
-
-
-		socket.on('send-audio', (data) => {
-			// Save the audio data to a file
-			const audioBuffer = Buffer.from(new Uint8Array(data.filePath));
-			const fileName = `${uuid.v4()}.webm`;
-			const filePath = path.join('uploads', fileName);
-		
-			fs.writeFile(filePath, audioBuffer, (err) => {
-			  if (err) {
-				console.error('Error saving audio file:', err);
-			  } else {
-				// Broadcast the file path to other clients
-				socket.broadcast.emit('receive-audio', data);``
-			  }
+		socket.on('sendVoiceMessage', (data) => {
+			const voiceBlob = Buffer.from(new Uint8Array(data.voiceBlob));
+	
+			// Save the voice message to the server
+			const filename = `${uuidv4()}.webm`;
+			const filePath = path.join('uploads/', filename);
+			fs.writeFile(filePath, voiceBlob, (err) => {
+				if (err) {
+					console.error('Error saving voice message:', err);
+					return;
+				}
+			
+				// Broadcast the file path to other users in the room
+				io.to(data.roomId).emit('receiveVoiceMessage', {
+					socketID: data.socketID,
+					userId : data.userId,
+					voiceUrl: `uploads/${filename}`,
+				});
 			});
-		  });
-		
-
-		// ------------voice socket end
+		});
+	
+		io.on('disconnect', () => {
+			console.log('A user disconnected');
+		});
 
 	})
 
