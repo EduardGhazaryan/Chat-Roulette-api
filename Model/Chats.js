@@ -8,6 +8,8 @@ const ChatsSchema = new mongoose.Schema(
         chatName: {type:String},
         chat:  [{
                     userId: {type:String},
+                    messageId: {type:String},
+                    createtAt: {type:String},
                     content: {type:String},
                     img: {type:String},
                     voice : {type:String}

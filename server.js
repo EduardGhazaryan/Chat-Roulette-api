@@ -16,6 +16,8 @@ const Connection = require("./Utils/Connection.js")
 
 const AuthRouter = require("./Router/AuthRouter.js")
 const UserRouter = require("./Router/UserRouter.js")
+const User = require("./Model/User.js")
+const OnlineUsers = require("./Model/OnlineUsers.js")
 
 
 
@@ -146,6 +148,7 @@ const io = require("socket.io")(server, {
 const users = {}
 let all_connected_users = []
 let newRoomConnect = []
+let userCount = []
 
 io.on("connection", (socket) => {
 	if (!users[socket.id]) {
@@ -159,18 +162,25 @@ io.on("connection", (socket) => {
 	socket.on("callUser", (data) => {
 		io.to(data.userToCall).emit('hey', {from: data.from,roomId:data.roomId});
 	})
-	socket.on('disconnect', () => {	  
+	socket.on('disconnect', async () => {	  
 		delete users[socket.id];
-		
+
+		const findOnlineUser = await OnlineUsers.findOne({socketID:socket.id})
+
+		if(findOnlineUser){
+			findOnlineUser.status = "offline"
+			await findOnlineUser.save()
+		}
+
 		console.log("disconnect-------",socket.id);
-		io.sockets.emit("available_users", users);
+		
 	  })
 
 
 	socket.on("join", (payload,) => {
 		let roomId = getRandomRoomName()
-		let roomClients 
-		let numberOfClients 
+		// let roomClients 
+		// let numberOfClients 
 		userName_cookie = payload.socketID
 		console.log("join-----",payload);
 		const findChat = newRoomConnect.find((chat)=> chat.roomMembers.includes(payload.socketID) && chat.roomMembers.includes(payload.participant))
@@ -178,17 +188,17 @@ io.on("connection", (socket) => {
 		if(findChat){
 			roomId = findChat.roomId
 			socket.join(findChat.roomId)
-			all_connected_users.map((r) => {
-			if (r.room_id === findChat.roomId) {
-				r.room_members.push(socket.id)
-			}
-		})
+		// 	all_connected_users.map((r) => {
+		// 	if (r.room_id === findChat.roomId) {
+		// 		r.room_members.push(socket.id)
+		// 	}
+		// })
 			socket.emit('room_joined', {
 				roomId: findChat.roomId,
 				peerId: socket.id,
-				all_users: all_connected_users
+				all_users: newRoomConnect
 			})
-			console.log("join------", all_connected_users);
+			console.log("join------", newRoomConnect);
 		
 		
 
@@ -199,34 +209,76 @@ io.on("connection", (socket) => {
 			})
 
 
-				 roomClients = io.sockets.adapter.rooms.get(roomId) || { size: 0 }
-				 numberOfClients = roomClients.size
+				//  roomClients = io.sockets.adapter.rooms.get(roomId) || { size: 0 }
+				//  numberOfClients = roomClients.size
 
 			socket.join(roomId)
 			console.log(`Creating room ${roomId} and emitting room_created socket event`)
-			all_connected_users.push({
-				room_id: roomId,
-				room_members: [userName_cookie]
-			})
+			// all_connected_users.push({
+			// 	room_id: roomId,
+			// 	room_members: [userName_cookie]
+			// })
 			socket.emit('room_created', {
 				roomId: roomId,
 				peerId: socket.id,
-				all_users: all_connected_users
+				all_users: newRoomConnect
 			})
 		}
 		
 
-		socket.on('message', (message) => {
+		socket.on('message', async (message) => {
+			const now = new Date();
+			const hours = now.getHours().toString().padStart(2, '0');
+			const minutes = now.getMinutes().toString().padStart(2, '0');
+			const seconds = now.getSeconds().toString().padStart(2, '0');
+			let messageTime = `${hours}:${minutes}:${seconds}`
 
+			let findRoom = newRoomConnect.find((r)=>r.roomId  === message.roomId)
+			let findBySocketID = findRoom.roomMembers.find((id)=> id !== message.from)
+			const findUser = await User.findOne({socketID: findBySocketID})
+
+			let findUserCount = userCount.find((r)=> r.roomId === message.roomId && r.socketID === findBySocketID)
+
+			if(findUserCount){
+				if(findUserCount.chatBonus < 20){
+					userCount.map((r)=>{
+						if(r.roomId === message.roomId && r.socketID === findBySocketID){
+							r.chatBonus = r.chatBonus + 1
+						}
+					})
+					findUser.chatBonus = findUser.chatBonus + 1
+
+					await findUser.save()
+				}
+			}else{
+				userCount.push({socketID: findBySocketID, roomId: message.roomId, chatBonus: 1})
+				findUser.chatBonus = findUser.chatBonus + 1
+					await findUser.save()
+			}
+			
+			
+
+
+			
 			let id = generateUniqueId()
-			io.to(roomId).emit('createMessage', {...message, messageID: id });
+			io.to(roomId).emit('createMessage', {...message, messageID: id, messageTime });
 		});
 		
 		socket.on('image_upload', (data) => {
 			const buffer = Buffer.from(data.image, 'base64');
+			console.log("image-data-------",data);
+			const now = new Date();
+			const hours = now.getHours().toString().padStart(2, '0');
+			const minutes = now.getMinutes().toString().padStart(2, '0');
+			const seconds = now.getSeconds().toString().padStart(2, '0');
+			let messageTime = `${hours}:${minutes}:${seconds}`
+
+			let id = generateUniqueId()
+			
 
 			const fileName = `${Date.now()}.jpg`;
 			const filePath = path.join(__dirname, 'uploads', fileName);
+
 			fs.writeFile(filePath, buffer, (err) => {
 			  if (err) {
 				console.error(err);
@@ -235,9 +287,9 @@ io.on("connection", (socket) => {
 			  }
 			});
 			const imageUrl = `/uploads/${fileName}`;
-			io.to(roomId).emit('receive_image', { imageUrl,userId:data.userId});
+			io.to(roomId).emit('receive_image', { imageUrl,userId:data.userId, socketID:data.socketID, messageTime , messageID:id});
 		  });
-		socket.on('end_chat',(info)=>{
+		socket.on('end_chat',async (info)=>{
 			findRoom = newRoomConnect.find((r)=> r.roomId === info.roomId)
 
 			if(info.chat){
@@ -263,7 +315,13 @@ io.on("connection", (socket) => {
 				})
 			}
 
-			all_connected_users = all_connected_users.filter((r)=> r.room_id !== info.roomId)
+			const findOnlineUser = await OnlineUsers.findOne({user: info.userId})
+
+			if(findOnlineUser){
+				findOnlineUser.status = "offline"
+				await findOnlineUser.save()
+			}
+	
 			newRoomConnect = newRoomConnect.filter((r)=>r.roomId !== info.roomId)
 
 
@@ -276,6 +334,14 @@ io.on("connection", (socket) => {
 
 		socket.on('sendVoiceMessage', (data) => {
 			const voiceBlob = Buffer.from(new Uint8Array(data.voiceBlob));
+
+			const now = new Date();
+			const hours = now.getHours().toString().padStart(2, '0');
+			const minutes = now.getMinutes().toString().padStart(2, '0');
+			const seconds = now.getSeconds().toString().padStart(2, '0');
+			let messageTime = `${hours}:${minutes}:${seconds}`
+			
+			let id = generateUniqueId()
 	
 			// Save the voice message to the server
 			const filename = `${uuidv4()}.webm`;
@@ -291,6 +357,8 @@ io.on("connection", (socket) => {
 					socketID: data.socketID,
 					userId : data.userId,
 					voiceUrl: `uploads/${filename}`,
+					messageID : id,
+					messageTime,
 				});
 			});
 		});

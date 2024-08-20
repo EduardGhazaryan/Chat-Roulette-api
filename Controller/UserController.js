@@ -4,7 +4,7 @@ const UserController = {
     search: async (req, res) => {
         try {
   
-            const { gender, maxAge, minAge } = req.query;
+            const { gender, maxAge, minAge,socketID } = req.query;
             const {id} = req.params
             const language = req.headers["accept-language"]
    
@@ -15,7 +15,7 @@ const UserController = {
        
         
             
-            let data = await UserService.search(myGender,myMaxAge,myMinAge,id,language);
+            let data = await UserService.search(myGender,myMaxAge,myMinAge,id,socketID,language);
             let count = 0
            
             
