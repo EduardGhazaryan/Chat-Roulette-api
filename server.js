@@ -371,6 +371,16 @@ io.on("connection", (socket) => {
 
 })
 
+app.get("/api/uploads/:image",(req,res)=>{
+	try {
+		const image=req.params.image
+		const imagePath=path.join(__dirname,"uploads",image)
+		res.sendFile(imagePath)
+	} catch (error) {
+		
+	}
+})
+
 const PORT = process.env.PORT || 2000
 
 
